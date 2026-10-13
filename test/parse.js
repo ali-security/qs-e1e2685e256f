@@ -893,6 +893,42 @@ test('arrayLimit boundary conditions', function (t) {
     t.end();
 });
 
+test('comma + arrayLimit', function (t) {
+    t.test('comma-separated values within arrayLimit stay as array', function (st) {
+        var result = qs.parse('a=1,2,3', { comma: true, arrayLimit: 5 });
+        st.ok(Array.isArray(result.a), 'result is an array');
+        st.deepEqual(result.a, ['1', '2', '3'], 'all values present');
+        st.end();
+    });
+
+    t.test('comma-separated values exceeding arrayLimit convert to object', function (st) {
+        var result = qs.parse('a=1,2,3,4', { comma: true, arrayLimit: 3 });
+        st.notOk(Array.isArray(result.a), 'result is not an array when over limit');
+        st.deepEqual(result.a, { 0: '1', 1: '2', 2: '3', 3: '4' }, 'all values preserved as object');
+        st.end();
+    });
+
+    t.test('comma-separated values exceeding arrayLimit with throwOnLimitExceeded throws', function (st) {
+        st['throws'](
+            function () {
+                qs.parse('a=1,2,3,4', { comma: true, arrayLimit: 3, throwOnLimitExceeded: true });
+            },
+            new RangeError('Array limit exceeded. Only 3 elements allowed in an array.'),
+            'throws error when comma-split exceeds array limit'
+        );
+        st.end();
+    });
+
+    t.test('comma-separated values at exactly arrayLimit stay as array', function (st) {
+        var result = qs.parse('a=1,2,3', { comma: true, arrayLimit: 3 });
+        st.ok(Array.isArray(result.a), 'result is an array when exactly at limit');
+        st.deepEqual(result.a, ['1', '2', '3'], 'all values present');
+        st.end();
+    });
+
+    t.end();
+});
+
 test('mixed array and object notation', function (t) {
     t.test('array brackets with object key - under limit', function (st) {
         st.deepEqual(
